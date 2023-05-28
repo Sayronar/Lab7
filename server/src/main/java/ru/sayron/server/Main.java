@@ -5,11 +5,6 @@ import org.slf4j.LoggerFactory;
 import ru.sayron.server.commands.*;
 import ru.sayron.server.utility.*;
 
-/**
- * Main server class. Creates all server instances.
- *
- * @author .
- */
 public class Main {
     public static final int PORT = 1821;
     public static final int CONNECTION_TIMEOUT = 60 * 1000;

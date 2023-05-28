@@ -10,6 +10,7 @@ import ru.sayron.common.exceptions.ScriptRecursionException;
 import ru.sayron.common.interaction.OrganizationRaw;
 import ru.sayron.common.interaction.Request;
 import ru.sayron.common.interaction.ResponseCode;
+import ru.sayron.common.interaction.User;
 import ru.sayron.common.utility.Outputer;
 
 import java.io.File;
@@ -32,7 +33,7 @@ public class ExecScript {
     }
 
 
-    public Request handle(ResponseCode serverResponseCode) {
+    public Request handle(ResponseCode serverResponseCode, User user) {
         String userInput;
         String[] userCommand;
         ProcessingCode processingCode;
@@ -81,10 +82,10 @@ public class ExecScript {
                 switch (processingCode) {
                     case OBJECT:
                         OrganizationRaw organizationAddRaw = generateOrganizationAdd();
-                        return new Request(userCommand[0], userCommand[1], organizationAddRaw);
+                        return new Request(userCommand[0], userCommand[1], organizationAddRaw, user);
                     case UPDATE_OBJECT:
                         OrganizationRaw organizationUpdateRaw = generateOrganizationUpdate();
-                        return new Request(userCommand[0], userCommand[1], organizationUpdateRaw);
+                        return new Request(userCommand[0], userCommand[1], organizationUpdateRaw, user);
                     case SCRIPT:
                         File scriptFile = new File(userCommand[1]);
                         if (!scriptFile.exists()) throw new FileNotFoundException();
@@ -109,9 +110,9 @@ public class ExecScript {
                 userScanner = scannerStack.pop();
             }
             scriptStack.clear();
-            return new Request();
+            return new Request(user);
         }
-        return new Request(userCommand[0], userCommand[1]);
+        return new Request(userCommand[0], userCommand[1], null, user);
     }
 
     /**

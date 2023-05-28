@@ -9,6 +9,7 @@ import ru.sayron.common.interaction.OrganizationRaw;
 import ru.sayron.common.interaction.Request;
 import ru.sayron.common.interaction.ResponseCode;
 import ru.sayron.common.utility.Outputer;
+import ru.sayron.common.interaction.User;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,7 +29,7 @@ public class UserHandler {
     }
 
 
-    public Request handle(ResponseCode serverResponseCode) {
+    public Request handle(ResponseCode serverResponseCode, User user) {
         String userInput;
         String[] userCommand;
         ProcessingCode processingCode;
@@ -42,7 +43,7 @@ public class UserHandler {
                     while (fileMode() && !userScanner.hasNextLine()) {
                         userScanner.close();
                         userScanner = scannerStack.pop();
-                        Outputer.println("Back to the script '" + scriptStack.pop().getName() + "'...");
+                        scriptStack.pop();
                     }
                     if (fileMode()) {
                         userInput = userScanner.nextLine();
@@ -74,10 +75,10 @@ public class UserHandler {
                 switch (processingCode) {
                     case OBJECT:
                         OrganizationRaw organizationAddRaw = generateOrganizationAdd();
-                        return new Request(userCommand[0], userCommand[1], organizationAddRaw);
+                        return new Request(userCommand[0], userCommand[1], organizationAddRaw, user);
                     case UPDATE_OBJECT:
                         OrganizationRaw organizationUpdateRaw = generateOrganizationUpdate();
-                        return new Request(userCommand[0], userCommand[1], organizationUpdateRaw);
+                        return new Request(userCommand[0], userCommand[1], organizationUpdateRaw, user);
                     case SCRIPT:
                         File scriptFile = new File(userCommand[1]);
                         if (!scriptFile.exists()) throw new FileNotFoundException();
@@ -102,9 +103,9 @@ public class UserHandler {
                 userScanner = scannerStack.pop();
             }
             scriptStack.clear();
-            return new Request();
+            return new Request(user);
         }
-        return new Request(userCommand[0], userCommand[1]);
+        return new Request(userCommand[0], userCommand[1], null, user);
     }
 
     /**

@@ -1,10 +1,12 @@
 package ru.sayron.client.command;
 
 import ru.sayron.client.command.ExecScript;
+import ru.sayron.client.utility.AuthHandler;
 import ru.sayron.common.exceptions.ConnectionErrorException;
 import ru.sayron.common.exceptions.NotInDeclaredLimitsException;
 import ru.sayron.common.interaction.Request;
 import ru.sayron.common.interaction.Response;
+import ru.sayron.common.interaction.User;
 import ru.sayron.common.utility.Outputer;
 
 import java.io.*;
@@ -21,13 +23,16 @@ public class Client1 {
     private SocketChannel socketChannel;
     private ObjectOutputStream serverWriter;
     private ObjectInputStream serverReader;
+    private AuthHandler authHandler;
+    private User user;
 
-    public Client1(String host, int port, int reconnectionTimeout, int maxReconnectionAttempts, ExecScript userHandler) {
+    public Client1(String host, int port, int reconnectionTimeout, int maxReconnectionAttempts, ExecScript userHandler, AuthHandler authHandler) {
         this.host = host;
         this.port = port;
         this.reconnectionTimeout = reconnectionTimeout;
         this.maxReconnectionAttempts = maxReconnectionAttempts;
         this.userHandler = userHandler;
+        this.authHandler = authHandler;
     }
 
 
@@ -90,8 +95,8 @@ public class Client1 {
         Response serverResponse = null;
         do {
             try {
-                requestToServer = serverResponse != null ? userHandler.handle(serverResponse.getResponseCode()) :
-                        userHandler.handle(null);
+                requestToServer = serverResponse != null ? userHandler.handle(serverResponse.getResponseCode(), user) :
+                        userHandler.handle(null, user);
                 if (requestToServer.isEmpty()) continue;
                 serverWriter.writeObject(requestToServer);
                 serverResponse = (Response) serverReader.readObject();

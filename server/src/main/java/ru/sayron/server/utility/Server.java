@@ -3,30 +3,32 @@ package ru.sayron.server.utility;
 import ru.sayron.common.exceptions.ClosingSocketException;
 import ru.sayron.common.exceptions.ConnectionErrorException;
 import ru.sayron.common.exceptions.OpeningServerSocketException;
-import ru.sayron.common.interaction.Request;
-import ru.sayron.common.interaction.Response;
-import ru.sayron.common.interaction.ResponseCode;
 import ru.sayron.common.utility.Outputer;
 import ru.sayron.server.Main;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Runs the server.
  */
 public class Server {
     private int port;
-    private int soTimeout;
     private ServerSocket serverSocket;
-    private RequestHandler requestHandler;
+    private CommandManager commandManager;
+    private boolean isStopped;
+    private ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+    private Semaphore semaphore;
 
-    public Server(int port, int soTimeout, RequestHandler requestHandler) {
+    public Server(int port, int maxClients, CommandManager commandManager) {
         this.port = port;
-        this.soTimeout = soTimeout;
-        this.requestHandler = requestHandler;
+        this.commandManager = commandManager;
+        this.semaphore = new Semaphore(maxClients);
     }
 
     /**
@@ -35,41 +37,79 @@ public class Server {
     public void run() {
         try {
             openServerSocket();
-            boolean processingStatus = true;
-            while (processingStatus) {
-                try (Socket clientSocket = connectToClient()) {
-                    processingStatus = processClientRequest(clientSocket);
-                } catch (ConnectionErrorException | SocketTimeoutException exception) {
-                    break;
-                } catch (IOException exception) {
-                    Outputer.printerror("Произошла ошибка при попытке завершить соединение с клиентом!");
-                    Main.logger.error("Произошла ошибка при попытке завершить соединение с клиентом!");
+            while (!isStopped()) {
+                try {
+                    acquireConnection();
+                    if (isStopped()) throw new ConnectionErrorException();
+                    Socket clientSocket = connectToClient();
+                    cachedThreadPool.submit(new ConnectionHandler(this, clientSocket, commandManager));
+                } catch (ConnectionErrorException exception) {
+                    if (!isStopped()) {
+                        Outputer.printerror("Произошла ошибка при соединении с клиентом!");
+                        Main.logger.error("Произошла ошибка при соединении с клиентом!");
+                    } else break;
                 }
             }
-            stop();
+            cachedThreadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            Outputer.println("Работа сервера завершена.");
         } catch (OpeningServerSocketException exception) {
             Outputer.printerror("Сервер не может быть запущен!");
             Main.logger.error("Сервер не может быть запущен!");
+        } catch (InterruptedException e) {
+            Outputer.printerror("Произошла ошибка при завершении работы с уже подключенными клиентами!");
         }
+    }
+
+    /**
+     * Acquire connection.
+     */
+    public void acquireConnection() {
+        try {
+            semaphore.acquire();
+            Main.logger.info("Разрешение на новое соединение получено.");
+        } catch (InterruptedException exception) {
+            Outputer.printerror("Произошла ошибка при получении разрешения на новое соединение!");
+            Main.logger.error("Произошла ошибка при получении разрешения на новое соединение!");
+        }
+    }
+
+    /**
+     * Release connection.
+     */
+    public void releaseConnection() {
+        semaphore.release();
+        Main.logger.info("Разрыв соединения зарегистрирован.");
     }
 
     /**
      * Finishes server operation.
      */
-    private void stop() {
+    public synchronized void stop() {
         try {
             Main.logger.info("Завершение работы сервера...");
             if (serverSocket == null) throw new ClosingSocketException();
+            isStopped = true;
+            cachedThreadPool.shutdown();
             serverSocket.close();
-            Outputer.println("Работа сервера успешно завершена.");
-            Main.logger.info("Работа сервера успешно завершена.");
+            Outputer.println("Завершение работы с уже подключенными клиентами...");
+            Main.logger.info("Работа сервера завершена.");
         } catch (ClosingSocketException exception) {
             Outputer.printerror("Невозможно завершить работу еще не запущенного сервера!");
             Main.logger.error("Невозможно завершить работу еще не запущенного сервера!");
         } catch (IOException exception) {
             Outputer.printerror("Произошла ошибка при завершении работы сервера!");
+            Outputer.println("Завершение работы с уже подключенными клиентами...");
             Main.logger.error("Произошла ошибка при завершении работы сервера!");
         }
+    }
+
+    /**
+     * Checked stops of server.
+     *
+     * @return Status of server stop.
+     */
+    private synchronized boolean isStopped() {
+        return isStopped;
     }
 
     /**
@@ -79,8 +119,7 @@ public class Server {
         try {
             Main.logger.info("Запуск сервера...");
             serverSocket = new ServerSocket(port);
-            serverSocket.setSoTimeout(soTimeout);
-            Main.logger.info("Сервер успешно запущен.");
+            Main.logger.info("Сервер запущен.");
         } catch (IllegalArgumentException exception) {
             Outputer.printerror("Порт '" + port + "' находится за пределами возможных значений!");
             Main.logger.error("Порт '" + port + "' находится за пределами возможных значений!");
@@ -95,56 +134,16 @@ public class Server {
     /**
      * Connecting to client.
      */
-    private Socket connectToClient() throws ConnectionErrorException, SocketTimeoutException {
+    private Socket connectToClient() throws ConnectionErrorException {
         try {
             Outputer.println("Прослушивание порта '" + port + "'...");
             Main.logger.info("Прослушивание порта '" + port + "'...");
             Socket clientSocket = serverSocket.accept();
-            Outputer.println("Соединение с клиентом успешно установлено.");
-            Main.logger.info("Соединение с клиентом успешно установлено.");
+            Outputer.println("Соединение с клиентом установлено.");
+            Main.logger.info("Соединение с клиентом установлено.");
             return clientSocket;
-        } catch (SocketTimeoutException exception) {
-            Outputer.printerror("Превышено время ожидания подключения!");
-            Main.logger.warn("Превышено время ожидания подключения!");
-            throw new SocketTimeoutException();
         } catch (IOException exception) {
-            Outputer.printerror("Произошла ошибка при соединении с клиентом!");
-            Main.logger.error("Произошла ошибка при соединении с клиентом!");
             throw new ConnectionErrorException();
         }
-    }
-
-    /**
-     * The process of receiving a request from a client.
-     */
-    private boolean processClientRequest(Socket clientSocket) {
-        Request userRequestHandler = null;
-        Response responseToUser = null;
-        try (ObjectInputStream clientReader = new ObjectInputStream(clientSocket.getInputStream());
-             ObjectOutputStream clientWriter = new ObjectOutputStream(clientSocket.getOutputStream())) {
-            do {
-                userRequestHandler = (Request) clientReader.readObject();
-                responseToUser = requestHandler.handle(userRequestHandler);
-                Main.logger.info("Запрос '" + userRequestHandler.getCommandName() + "' успешно обработан.");
-                clientWriter.writeObject(responseToUser);
-                clientWriter.flush();
-            } while (responseToUser.getResponseCode() != ResponseCode.SERVER_EXIT);
-            return false;
-        } catch (ClassNotFoundException exception) {
-            Outputer.printerror("Произошла ошибка при чтении полученных данных!");
-            Main.logger.error("Произошла ошибка при чтении полученных данных!");
-        } catch (InvalidClassException | NotSerializableException exception) {
-            Outputer.printerror("Произошла ошибка при отправке данных на клиент!");
-            Main.logger.error("Произошла ошибка при отправке данных на клиент!");
-        } catch (IOException exception) {
-            if (userRequestHandler == null) {
-                Outputer.printerror("Непредвиденный разрыв соединения с клиентом!");
-                Main.logger.warn("Непредвиденный разрыв соединения с клиентом!");
-            } else {
-                Outputer.println("Клиент успешно отключен от сервера!");
-                Main.logger.info("Клиент успешно отключен от сервера!");
-            }
-        }
-        return true;
     }
 }

@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Operates the commands.
  */
 public class CommandManager {
-    private final int COMMAND_HISTORY_SIZE = 17;
+    private final int COMMAND_HISTORY_SIZE = 16;
 
     private String[] commandHistory = new String[COMMAND_HISTORY_SIZE];
     private List<Command> commands = new ArrayList<>();
@@ -25,7 +25,6 @@ public class CommandManager {
     private Command updateIdCommand;
     private Command removeByIdCommand;
     private Command clearCommand;
-    private Command saveCommand;
     private Command exitCommand;
     private Command executeScriptCommand;
     private Command removeGreaterCommand;
@@ -45,7 +44,7 @@ public class CommandManager {
 
     public CommandManager(Command helpCommand, Command infoCommand,
                           Command showCommand, Command addCommand, Command updateIdCommand, Command removeByIdCommand,
-                          Command clearCommand, Command saveCommand, Command exitCommand, Command executeScriptCommand,
+                          Command clearCommand, Command exitCommand, Command executeScriptCommand,
                           Command removeGreaterCommand, Command removeLowerCommand, Command historyCommand,
                           Command employeesCountCommand, Command filterContainsNameCommand,
                           Command filterGreaterThanEmployeesCountCommand, Command serverExitCommand, Command execScriptCommand,
@@ -59,7 +58,6 @@ public class CommandManager {
         this.updateIdCommand = updateIdCommand;
         this.removeByIdCommand = removeByIdCommand;
         this.clearCommand = clearCommand;
-        this.saveCommand = saveCommand;
         this.exitCommand = exitCommand;
         this.executeScriptCommand = executeScriptCommand;
         this.removeGreaterCommand = removeGreaterCommand;
@@ -80,7 +78,6 @@ public class CommandManager {
         commands.add(updateIdCommand);
         commands.add(removeByIdCommand);
         commands.add(clearCommand);
-        commands.add(saveCommand);
         commands.add(exitCommand);
         commands.add(executeScriptCommand);
         commands.add(removeLowerCommand);
@@ -243,9 +240,9 @@ public class CommandManager {
      * @param objectArgument Its object argument.
      * @return Command exit status.
      */
-    public boolean save(String stringArgument, Object objectArgument, User user) {
+    /*public boolean save(String stringArgument, Object objectArgument, User user) {
         return saveCommand.execute(stringArgument, objectArgument, user);
-    }
+    }*/
 
     /**
      * Executes needed command.

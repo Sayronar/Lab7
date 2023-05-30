@@ -1,5 +1,7 @@
 package ru.sayron.common.data;
 
+import ru.sayron.common.interaction.User;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -13,11 +15,12 @@ public class Organization implements Comparable<Organization> {
     private Long employeesCount; //Поле не может быть null, Значение поля должно быть больше 0
     private OrganizationType type; //Поле может быть null
     private Address officialAddress; //Поле не может быть null
+    private User owner;
 
     public Organization() {}
 
     public Organization(Long id, String name, Coordinates coordinates, LocalDateTime creationDate, int annualTurnover,
-                        String fullName, Long employeesCount, OrganizationType type, Address officialAddress) {
+                        String fullName, Long employeesCount, OrganizationType type, Address officialAddress, User user) {
         this.id = id;
         this.name = name;
         this.coordinates = coordinates;
@@ -27,6 +30,7 @@ public class Organization implements Comparable<Organization> {
         this.employeesCount = employeesCount;
         this.type = type;
         this.officialAddress = officialAddress;
+        this.owner = user;
     }
 
     public Long getId() {
@@ -65,6 +69,13 @@ public class Organization implements Comparable<Organization> {
         return officialAddress;
     }
 
+    /**
+     * @return Owner of the organization.
+     */
+    public User getOwner() {
+        return owner;
+    }
+
     @Override
     public int compareTo(Organization organizationObj) {
         return id.compareTo(organizationObj.getId());
@@ -74,7 +85,7 @@ public class Organization implements Comparable<Organization> {
     public String toString() {
         String info = "";
         info += "Organization №" + id;
-        info += " (added " + creationDate.toLocalDate() + " " + creationDate.toLocalTime() + ")";
+        info += " (added " + owner.getUsername() + creationDate.toLocalDate() + " " + creationDate.toLocalTime() + ")";
         info += "\n Name: " + name;
         info += "\n Location: " + coordinates;
         info += "\n Annual turnover: " + annualTurnover;

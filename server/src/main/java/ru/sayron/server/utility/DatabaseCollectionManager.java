@@ -273,18 +273,17 @@ public class DatabaseCollectionManager {
     }
 
     /**
-     * @param OrganizationRaw Organization raw.
+     * @param organizationRaw Organization raw.
      * @param user      User.
      * @return Organization.
      * @throws DatabaseHandlingException When there's exception inside.
      */
-    public Organization insertOrganization(OrganizationRaw OrganizationRaw, User user) throws DatabaseHandlingException {
-        // TODO: Если делаем орден уникальным, тут че-то много всего менять
-        Organization Organization;
+    public Organization insertOrganization(OrganizationRaw organizationRaw, User user) throws DatabaseHandlingException {
+        Organization organization;
         PreparedStatement preparedInsertOrganizationStatement = null;
         PreparedStatement preparedInsertCoordinatesStatement = null;
         PreparedStatement preparedInsertAddressStatement = null;
-        PreparedStatement preparedInsertLocationStatement = null;
+
         try {
             databaseHandler.setCommitMode();
             databaseHandler.setSavepoint();
@@ -295,55 +294,53 @@ public class DatabaseCollectionManager {
             preparedInsertCoordinatesStatement = databaseHandler.getPreparedStatement(INSERT_COORDINATES, true);
             preparedInsertAddressStatement = databaseHandler.getPreparedStatement(INSERT_ADDRESS, true);
 
-            preparedInsertAddressStatement.setString(1, OrganizationRaw.getOfficialAddress().getStreet());
-            long locationId;
-            if ()
-            preparedInsertAddressStatement.setLong(2, LocationId);
+            preparedInsertAddressStatement.setString(1, organizationRaw.getOfficialAddress().getStreet());
+            preparedInsertAddressStatement.setString(2, organizationRaw.getOfficialAddress().getTown().toString());
             if (preparedInsertAddressStatement.executeUpdate() == 0) throw new SQLException();
-            ResultSet generatedChapterKeys = preparedInsertChapterStatement.getGeneratedKeys();
+            ResultSet generatedChapterKeys = preparedInsertAddressStatement.getGeneratedKeys();
             long chapterId;
             if (generatedChapterKeys.next()) {
                 chapterId = generatedChapterKeys.getLong(1);
             } else throw new SQLException();
-            Main.logger.info("Выполнен запрос INSERT_CHAPTER.");
+            Main.logger.info("Выполнен запрос INSERT_ADDRESS.");
 
-            preparedInsertOrganizationStatement.setString(1, OrganizationRaw.getName());
+            preparedInsertOrganizationStatement.setString(1, organizationRaw.getName());
             preparedInsertOrganizationStatement.setTimestamp(2, Timestamp.valueOf(creationTime));
-            preparedInsertOrganizationStatement.setDouble(3, OrganizationRaw.getHealth());
-            preparedInsertOrganizationStatement.setString(4, OrganizationRaw.getCategory().toString());
-            preparedInsertOrganizationStatement.setString(5, OrganizationRaw.getWeaponType().toString());
-            preparedInsertOrganizationStatement.setString(6, OrganizationRaw.getMeleeWeapon().toString());
+            preparedInsertOrganizationStatement.setInt(3, organizationRaw.getAnnualTurnover());
+            preparedInsertOrganizationStatement.setString(4, organizationRaw.getFullName());
+            preparedInsertOrganizationStatement.setLong(5, organizationRaw.getEmployeesCount());
+            preparedInsertOrganizationStatement.setString(6, organizationRaw.getType().toString());
             preparedInsertOrganizationStatement.setLong(7, chapterId);
             preparedInsertOrganizationStatement.setLong(8, databaseUserManager.getUserIdByUsername(user));
             if (preparedInsertOrganizationStatement.executeUpdate() == 0) throw new SQLException();
             ResultSet generatedOrganizationKeys = preparedInsertOrganizationStatement.getGeneratedKeys();
-            long OrganizationId;
+            long organizationId;
             if (generatedOrganizationKeys.next()) {
-                OrganizationId = generatedOrganizationKeys.getLong(1);
+                organizationId = generatedOrganizationKeys.getLong(1);
             } else throw new SQLException();
-            Main.logger.info("Выполнен запрос INSERT_Organization.");
+            Main.logger.info("Выполнен запрос INSERT_ORGANIZATION.");
 
-            preparedInsertCoordinatesStatement.setLong(1, OrganizationId);
-            preparedInsertCoordinatesStatement.setDouble(2, OrganizationRaw.getCoordinates().getX());
-            preparedInsertCoordinatesStatement.setFloat(3, OrganizationRaw.getCoordinates().getY());
+            preparedInsertCoordinatesStatement.setLong(1, organizationId);
+            preparedInsertCoordinatesStatement.setDouble(2, organizationRaw.getCoordinates().getX());
+            preparedInsertCoordinatesStatement.setFloat(3, organizationRaw.getCoordinates().getY());
             if (preparedInsertCoordinatesStatement.executeUpdate() == 0) throw new SQLException();
             Main.logger.info("Выполнен запрос INSERT_COORDINATES.");
 
-            Organization = new Organization(
-                    spaceOrganizationId,
-                    OrganizationRaw.getName(),
-                    OrganizationRaw.getCoordinates(),
+            organization = new Organization(
+                    organizationId,
+                    organizationRaw.getName(),
+                    organizationRaw.getCoordinates(),
                     creationTime,
-                    OrganizationRaw.getHealth(),
-                    OrganizationRaw.getCategory(),
-                    OrganizationRaw.getWeaponType(),
-                    OrganizationRaw.getMeleeWeapon(),
-                    OrganizationRaw.getChapter(),
+                    organizationRaw.getAnnualTurnover(),
+                    organizationRaw.getFullName(),
+                    organizationRaw.getEmployeesCount(),
+                    organizationRaw.getType(),
+                    organizationRaw.getOfficialAddress(),
                     user
             );
 
             databaseHandler.commit();
-            return Organization;
+            return organization;
         } catch (SQLException exception) {
             Main.logger.error("Произошла ошибка при выполнении группы запросов на добавление нового объекта!");
             databaseHandler.rollback();
@@ -351,80 +348,79 @@ public class DatabaseCollectionManager {
         } finally {
             databaseHandler.closePreparedStatement(preparedInsertOrganizationStatement);
             databaseHandler.closePreparedStatement(preparedInsertCoordinatesStatement);
-            databaseHandler.closePreparedStatement(preparedInsertChapterStatement);
+            databaseHandler.closePreparedStatement(preparedInsertAddressStatement);
             databaseHandler.setNormalMode();
         }
     }
 
     /**
-     * @param OrganizationRaw Organization raw.
-     * @param OrganizationId  Id of Organization.
+     * @param organizationRaw Organization raw.
+     * @param organizationId  Id of Organization.
      * @throws DatabaseHandlingException When there's exception inside.
      */
-    public void updateOrganizationById(long OrganizationId, OrganizationRaw OrganizationRaw) throws DatabaseHandlingException {
-        // TODO: Если делаем орден уникальным, тут че-то много всего менять
+    public void updateOrganizationById(long organizationId, OrganizationRaw organizationRaw) throws DatabaseHandlingException {
         PreparedStatement preparedUpdateOrganizationNameByIdStatement = null;
-        PreparedStatement preparedUpdateOrganizationHealthByIdStatement = null;
-        PreparedStatement preparedUpdateOrganizationCategoryByIdStatement = null;
-        PreparedStatement preparedUpdateOrganizationWeaponTypeByIdStatement = null;
-        PreparedStatement preparedUpdateOrganizationMeleeWeaponByIdStatement = null;
+        PreparedStatement preparedUpdateOrganizationAnnualTurnoverByIdStatement = null;
+        PreparedStatement preparedUpdateOrganizationFullNameByIdStatement = null;
+        PreparedStatement preparedUpdateOrganizationEmployeesCountByIdStatement = null;
+        PreparedStatement preparedUpdateOrganizationOrganizationTypeByIdStatement = null;
         PreparedStatement preparedUpdateCoordinatesByOrganizationIdStatement = null;
-        PreparedStatement preparedUpdateChapterByIdStatement = null;
+        PreparedStatement preparedUpdateAddressByIdStatement = null;
         try {
             databaseHandler.setCommitMode();
             databaseHandler.setSavepoint();
 
-            preparedUpdateOrganizationNameByIdStatement = databaseHandler.getPreparedStatement(UPDATE_Organization_NAME_BY_ID, false);
-            preparedUpdateOrganizationHealthByIdStatement = databaseHandler.getPreparedStatement(UPDATE_Organization_HEALTH_BY_ID, false);
-            preparedUpdateOrganizationCategoryByIdStatement = databaseHandler.getPreparedStatement(UPDATE_Organization_CATEGORY_BY_ID, false);
-            preparedUpdateOrganizationWeaponTypeByIdStatement = databaseHandler.getPreparedStatement(UPDATE_Organization_WEAPON_TYPE_BY_ID, false);
-            preparedUpdateOrganizationMeleeWeaponByIdStatement = databaseHandler.getPreparedStatement(UPDATE_Organization_MELEE_WEAPON_BY_ID, false);
-            preparedUpdateCoordinatesByOrganizationIdStatement = databaseHandler.getPreparedStatement(UPDATE_COORDINATES_BY_Organization_ID, false);
-            preparedUpdateChapterByIdStatement = databaseHandler.getPreparedStatement(UPDATE_CHAPTER_BY_ID, false);
+            preparedUpdateOrganizationNameByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ORGANIZATION_NAME_BY_ID, false);
+            preparedUpdateOrganizationAnnualTurnoverByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ORGANIZATION_ANNUAL_TURNOVER_BY_ID, false);
+            preparedUpdateOrganizationFullNameByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ORGANIZATION_FULL_NAME_BY_ID, false);
+            preparedUpdateOrganizationEmployeesCountByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ORGANIZATION_EMPLOYEES_COUNT_BY_ID, false);
+            preparedUpdateOrganizationOrganizationTypeByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ORGANIZATION_TYPE_BY_ID, false);
+            preparedUpdateCoordinatesByOrganizationIdStatement = databaseHandler.getPreparedStatement(UPDATE_COORDINATES_BY_ORGANIZATION_ID, false);
+            preparedUpdateAddressByIdStatement = databaseHandler.getPreparedStatement(UPDATE_ADDRESS_BY_ID, false);
 
-            if (OrganizationRaw.getName() != null) {
-                preparedUpdateOrganizationNameByIdStatement.setString(1, OrganizationRaw.getName());
-                preparedUpdateOrganizationNameByIdStatement.setLong(2, OrganizationId);
+            if (organizationRaw.getName() != null) {
+                preparedUpdateOrganizationNameByIdStatement.setString(1, organizationRaw.getName());
+                preparedUpdateOrganizationNameByIdStatement.setLong(2, organizationId);
                 if (preparedUpdateOrganizationNameByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_Organization_NAME_BY_ID.");
+                Main.logger.info("Выполнен запрос UPDATE_ORGANIZATION_NAME_BY_ID.");
             }
-            if (OrganizationRaw.getCoordinates() != null) {
-                preparedUpdateCoordinatesByOrganizationIdStatement.setDouble(1, OrganizationRaw.getCoordinates().getX());
-                preparedUpdateCoordinatesByOrganizationIdStatement.setFloat(2, OrganizationRaw.getCoordinates().getY());
-                preparedUpdateCoordinatesByOrganizationIdStatement.setLong(3, OrganizationId);
+            if (organizationRaw.getCoordinates() != null) {
+                preparedUpdateCoordinatesByOrganizationIdStatement.setDouble(1, organizationRaw.getCoordinates().getX());
+                preparedUpdateCoordinatesByOrganizationIdStatement.setFloat(2, organizationRaw.getCoordinates().getY());
+                preparedUpdateCoordinatesByOrganizationIdStatement.setLong(3, organizationId);
                 if (preparedUpdateCoordinatesByOrganizationIdStatement.executeUpdate() == 0) throw new SQLException();
                 Main.logger.info("Выполнен запрос UPDATE_COORDINATES_BY_Organization_ID.");
             }
-            if (OrganizationRaw.getHealth() != -1) {
-                preparedUpdateOrganizationHealthByIdStatement.setDouble(1, OrganizationRaw.getHealth());
-                preparedUpdateOrganizationHealthByIdStatement.setLong(2, OrganizationId);
-                if (preparedUpdateOrganizationHealthByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_Organization_HEALTH_BY_ID.");
+            if (organizationRaw.getAnnualTurnover() != -1) {
+                preparedUpdateOrganizationAnnualTurnoverByIdStatement.setInt(1, organizationRaw.getAnnualTurnover());
+                preparedUpdateOrganizationAnnualTurnoverByIdStatement.setLong(2, organizationId);
+                if (preparedUpdateOrganizationAnnualTurnoverByIdStatement.executeUpdate() == 0) throw new SQLException();
+                Main.logger.info("Выполнен запрос UPDATE_ORGANIZATION_ANNUAL_TURNOVER_BY_ID.");
             }
-            if (OrganizationRaw.getCategory() != null) {
-                preparedUpdateOrganizationCategoryByIdStatement.setString(1, OrganizationRaw.getCategory().toString());
-                preparedUpdateOrganizationCategoryByIdStatement.setLong(2, OrganizationId);
-                if (preparedUpdateOrganizationCategoryByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_Organization_CATEGORY_BY_ID.");
+            if (organizationRaw.getFullName() != null) {
+                preparedUpdateOrganizationFullNameByIdStatement.setString(1, organizationRaw.getFullName().toString());
+                preparedUpdateOrganizationFullNameByIdStatement.setLong(2, organizationId);
+                if (preparedUpdateOrganizationFullNameByIdStatement.executeUpdate() == 0) throw new SQLException();
+                Main.logger.info("Выполнен запрос UPDATE_ORGANIZATION_FULL_NAME_BY_ID.");
             }
-            if (OrganizationRaw.getWeaponType() != null) {
-                preparedUpdateOrganizationWeaponTypeByIdStatement.setString(1, OrganizationRaw.getWeaponType().toString());
-                preparedUpdateOrganizationWeaponTypeByIdStatement.setLong(2, OrganizationId);
-                if (preparedUpdateOrganizationWeaponTypeByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_Organization_WEAPON_TYPE_BY_ID.");
+            if (organizationRaw.getEmployeesCount() != null) {
+                preparedUpdateOrganizationEmployeesCountByIdStatement.setLong(1, organizationRaw.getEmployeesCount());
+                preparedUpdateOrganizationEmployeesCountByIdStatement.setLong(2, organizationId);
+                if (preparedUpdateOrganizationEmployeesCountByIdStatement.executeUpdate() == 0) throw new SQLException();
+                Main.logger.info("Выполнен запрос UPDATE_ORGANIZATION_EMPLOYEES_COUNT_BY_ID.");
             }
-            if (OrganizationRaw.getMeleeWeapon() != null) {
-                preparedUpdateOrganizationMeleeWeaponByIdStatement.setString(1, OrganizationRaw.getMeleeWeapon().toString());
-                preparedUpdateOrganizationMeleeWeaponByIdStatement.setLong(2, OrganizationId);
-                if (preparedUpdateOrganizationMeleeWeaponByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_Organization_MELEE_WEAPON_BY_ID.");
+            if (organizationRaw.getType() != null) {
+                preparedUpdateOrganizationOrganizationTypeByIdStatement.setString(1, organizationRaw.getType().toString());
+                preparedUpdateOrganizationOrganizationTypeByIdStatement.setLong(2, organizationId);
+                if (preparedUpdateOrganizationOrganizationTypeByIdStatement.executeUpdate() == 0) throw new SQLException();
+                Main.logger.info("Выполнен запрос UPDATE_ORGANIZATION_TYPE_BY_ID.");
             }
-            if (OrganizationRaw.getChapter() != null) {
-                preparedUpdateChapterByIdStatement.setString(1, OrganizationRaw.getChapter().getName());
-                preparedUpdateChapterByIdStatement.setLong(2, OrganizationRaw.getChapter().getOrganizationsCount());
-                preparedUpdateChapterByIdStatement.setLong(3, getChapterIdByOrganizationId(OrganizationId));
-                if (preparedUpdateChapterByIdStatement.executeUpdate() == 0) throw new SQLException();
-                Main.logger.info("Выполнен запрос UPDATE_CHAPTER_BY_ID.");
+            if (organizationRaw.getOfficialAddress() != null) {
+                preparedUpdateAddressByIdStatement.setString(1, organizationRaw.getOfficialAddress().getStreet());
+                preparedUpdateAddressByIdStatement.setString(2, organizationRaw.getOfficialAddress().getTown().toString());
+                preparedUpdateAddressByIdStatement.setLong(3, getAddressIdByOrganizationId(organizationId));
+                if (preparedUpdateAddressByIdStatement.executeUpdate() == 0) throw new SQLException();
+                Main.logger.info("Выполнен запрос UPDATE_ADDRESS_BY_ID.");
             }
 
             databaseHandler.commit();
@@ -434,12 +430,12 @@ public class DatabaseCollectionManager {
             throw new DatabaseHandlingException();
         } finally {
             databaseHandler.closePreparedStatement(preparedUpdateOrganizationNameByIdStatement);
-            databaseHandler.closePreparedStatement(preparedUpdateOrganizationHealthByIdStatement);
-            databaseHandler.closePreparedStatement(preparedUpdateOrganizationCategoryByIdStatement);
-            databaseHandler.closePreparedStatement(preparedUpdateOrganizationWeaponTypeByIdStatement);
-            databaseHandler.closePreparedStatement(preparedUpdateOrganizationMeleeWeaponByIdStatement);
+            databaseHandler.closePreparedStatement(preparedUpdateOrganizationAnnualTurnoverByIdStatement);
+            databaseHandler.closePreparedStatement(preparedUpdateOrganizationFullNameByIdStatement);
+            databaseHandler.closePreparedStatement(preparedUpdateOrganizationEmployeesCountByIdStatement);
+            databaseHandler.closePreparedStatement(preparedUpdateOrganizationOrganizationTypeByIdStatement);
             databaseHandler.closePreparedStatement(preparedUpdateCoordinatesByOrganizationIdStatement);
-            databaseHandler.closePreparedStatement(preparedUpdateChapterByIdStatement);
+            databaseHandler.closePreparedStatement(preparedUpdateAddressByIdStatement);
             databaseHandler.setNormalMode();
         }
     }
@@ -447,15 +443,14 @@ public class DatabaseCollectionManager {
     /**
      * Delete Organization by id.
      *
-     * @param OrganizationId Id of Organization.
+     * @param organizationId Id of Organization.
      * @throws DatabaseHandlingException When there's exception inside.
      */
-    public void deleteOrganizationById(long OrganizationId) throws DatabaseHandlingException {
-        // TODO: Если делаем орден уникальным, тут че-то много всего менять
+    public void deleteOrganizationById(long organizationId) throws DatabaseHandlingException {
         PreparedStatement preparedDeleteChapterByIdStatement = null;
         try {
-            preparedDeleteChapterByIdStatement = databaseHandler.getPreparedStatement(DELETE_CHAPTER_BY_ID, false);
-            preparedDeleteChapterByIdStatement.setLong(1, getChapterIdByOrganizationId(OrganizationId));
+            preparedDeleteChapterByIdStatement = databaseHandler.getPreparedStatement(DELETE_ADDRESS_BY_ID, false);
+            preparedDeleteChapterByIdStatement.setLong(1, getAddressIdByOrganizationId(organizationId));
             if (preparedDeleteChapterByIdStatement.executeUpdate() == 0) Outputer.println(3);
             Main.logger.info("Выполнен запрос DELETE_CHAPTER_BY_ID.");
         } catch (SQLException exception) {
@@ -469,16 +464,16 @@ public class DatabaseCollectionManager {
     /**
      * Checks Organization user id.
      *
-     * @param OrganizationId Id of Organization.
+     * @param organizationId Id of Organization.
      * @param user Owner of Organization.
      * @throws DatabaseHandlingException When there's exception inside.
      * @return Is everything ok.
      */
-    public boolean checkOrganizationUserId(long OrganizationId, User user) throws DatabaseHandlingException {
+    public boolean checkOrganizationUserId(long organizationId, User user) throws DatabaseHandlingException {
         PreparedStatement preparedSelectOrganizationByIdAndUserIdStatement = null;
         try {
-            preparedSelectOrganizationByIdAndUserIdStatement = databaseHandler.getPreparedStatement(SELECT_Organization_BY_ID_AND_USER_ID, false);
-            preparedSelectOrganizationByIdAndUserIdStatement.setLong(1, OrganizationId);
+            preparedSelectOrganizationByIdAndUserIdStatement = databaseHandler.getPreparedStatement(SELECT_ORGANIZATION_BY_ID_AND_USER_ID, false);
+            preparedSelectOrganizationByIdAndUserIdStatement.setLong(1, organizationId);
             preparedSelectOrganizationByIdAndUserIdStatement.setLong(2, databaseUserManager.getUserIdByUsername(user));
             ResultSet resultSet = preparedSelectOrganizationByIdAndUserIdStatement.executeQuery();
             Main.logger.info("Выполнен запрос SELECT_Organization_BY_ID_AND_USER_ID.");
@@ -497,9 +492,9 @@ public class DatabaseCollectionManager {
      * @throws DatabaseHandlingException When there's exception inside.
      */
     public void clearCollection() throws DatabaseHandlingException {
-        NavigableSet<SpaceOrganization> OrganizationList = getCollection();
-        for (SpaceOrganization Organization : OrganizationList) {
-            deleteOrganizationById(Organization.getId());
+        NavigableSet<Organization> OrganizationList = getCollection();
+        for (Organization organization : OrganizationList) {
+            deleteOrganizationById(organization.getId());
         }
     }
 }

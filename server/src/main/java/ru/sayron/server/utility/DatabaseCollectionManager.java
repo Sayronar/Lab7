@@ -283,6 +283,7 @@ public class DatabaseCollectionManager {
         PreparedStatement preparedInsertOrganizationStatement = null;
         PreparedStatement preparedInsertCoordinatesStatement = null;
         PreparedStatement preparedInsertAddressStatement = null;
+        PreparedStatement preparedInsertLocationStatement = null;
 
         try {
             databaseHandler.setCommitMode();
@@ -293,14 +294,26 @@ public class DatabaseCollectionManager {
             preparedInsertOrganizationStatement = databaseHandler.getPreparedStatement(INSERT_ORGANIZATION, true);
             preparedInsertCoordinatesStatement = databaseHandler.getPreparedStatement(INSERT_COORDINATES, true);
             preparedInsertAddressStatement = databaseHandler.getPreparedStatement(INSERT_ADDRESS, true);
+            preparedInsertLocationStatement = databaseHandler.getPreparedStatement(INSERT_LOCATION, true);
+
+            preparedInsertLocationStatement.setFloat(1, organizationRaw.getOfficialAddress().getTown().getX());
+            preparedInsertLocationStatement.setFloat(2, organizationRaw.getOfficialAddress().getTown().getY());
+            preparedInsertLocationStatement.setFloat(3, organizationRaw.getOfficialAddress().getTown().getZ());
+            if (preparedInsertLocationStatement.executeUpdate() == 0) throw new SQLException();
+            ResultSet generatedLocationKeys = preparedInsertLocationStatement.getGeneratedKeys();
+            long locationId;
+            if (generatedLocationKeys.next()) {
+                locationId = generatedLocationKeys.getLong(1);
+            } else throw new SQLException();
+            Main.logger.info("Выполнен запрос INSERT_LOCATION.");
 
             preparedInsertAddressStatement.setString(1, organizationRaw.getOfficialAddress().getStreet());
-            preparedInsertAddressStatement.setString(2, organizationRaw.getOfficialAddress().getTown().toString());
+            preparedInsertAddressStatement.setLong(2, locationId);
             if (preparedInsertAddressStatement.executeUpdate() == 0) throw new SQLException();
-            ResultSet generatedChapterKeys = preparedInsertAddressStatement.getGeneratedKeys();
-            long chapterId;
-            if (generatedChapterKeys.next()) {
-                chapterId = generatedChapterKeys.getLong(1);
+            ResultSet generatedAddressKeys = preparedInsertAddressStatement.getGeneratedKeys();
+            long addressId;
+            if (generatedAddressKeys.next()) {
+                addressId = generatedAddressKeys.getLong(1);
             } else throw new SQLException();
             Main.logger.info("Выполнен запрос INSERT_ADDRESS.");
 
@@ -310,7 +323,7 @@ public class DatabaseCollectionManager {
             preparedInsertOrganizationStatement.setString(4, organizationRaw.getFullName());
             preparedInsertOrganizationStatement.setLong(5, organizationRaw.getEmployeesCount());
             preparedInsertOrganizationStatement.setString(6, organizationRaw.getType().toString());
-            preparedInsertOrganizationStatement.setLong(7, chapterId);
+            preparedInsertOrganizationStatement.setLong(7, addressId);
             preparedInsertOrganizationStatement.setLong(8, databaseUserManager.getUserIdByUsername(user));
             if (preparedInsertOrganizationStatement.executeUpdate() == 0) throw new SQLException();
             ResultSet generatedOrganizationKeys = preparedInsertOrganizationStatement.getGeneratedKeys();

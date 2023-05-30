@@ -1,6 +1,7 @@
 package ru.sayron.server.commands;
 
 import ru.sayron.common.exceptions.*;
+import ru.sayron.common.interaction.User;
 import ru.sayron.common.utility.Outputer;
 import ru.sayron.server.utility.CollectionManager;
 
@@ -18,7 +19,7 @@ public class FilterGreaterThanEmployeesCountCommand extends AbstractCommand {
      * @return Command exit status.
      */
     @Override
-    public boolean execute(String argument, Object objectArgument) {
+    public boolean execute(String argument, Object objectArgument, User user) {
         try {
             if (argument.isEmpty() || objectArgument != null) throw new WrongAmountOfElementsException();
             if (collectionManager.collectionSize() == 0) throw new CollectionIsEmptyException();

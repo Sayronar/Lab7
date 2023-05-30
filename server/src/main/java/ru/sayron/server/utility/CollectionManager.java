@@ -3,19 +3,20 @@ package ru.sayron.server.utility;
 import ru.sayron.common.data.Organization;
 
 import java.time.LocalDateTime;
+import java.util.NavigableSet;
 import java.util.TreeSet;
 
 public class CollectionManager {
     private TreeSet<Organization> organizationsCollection;
     private LocalDateTime lastInitTime;
     private LocalDateTime lastSaveTime;
-    private FileManager fileManager;
+    private DatabaseCollectionManager databaseCollectionManager;
 
-    public CollectionManager(FileManager fileManager) {
+    public CollectionManager(DatabaseCollectionManager fileManager) {
         this.organizationsCollection = new TreeSet<>();
         this.lastInitTime = null;
         this.lastSaveTime = null;
-        this.fileManager = fileManager;
+        this.databaseCollectionManager = fileManager;
     }
 
     public TreeSet<Organization> getCollection() {
@@ -147,12 +148,42 @@ public class CollectionManager {
     }
 
     /**
+     * Remove organizations greater than the selected one.
+     *
+     * @param organizationToCompare A organization to compare with.
+     * @return Greater organizations list.
+     */
+    public NavigableSet<Organization> getGreater(Organization organizationToCompare) {
+        return organizationsCollection.stream().filter(marine -> marine.compareTo(organizationToCompare) > 0).collect(
+                TreeSet::new,
+                TreeSet::add,
+                TreeSet::addAll
+        );
+    }
+
+    /**
      * Remove organization lower than the selected one.
      * @param organizationToCompare A organization to compare with.
      */
     public void removeLower(Organization organizationToCompare) {
         organizationsCollection.removeIf(organization -> organization.compareTo(organizationToCompare) < 0);
     }
+
+    /**
+     * Remove organizations lower than the selected one.
+     *
+     * @param organizationToCompare A organization to compare with.
+     * @return Lower organizations list.
+     */
+    public NavigableSet<Organization> getLower(Organization organizationToCompare) {
+        return organizationsCollection.stream().filter(marine -> marine.compareTo(organizationToCompare) < 0).collect(
+                TreeSet::new,
+                TreeSet::add,
+                TreeSet::addAll
+        );
+    }
+
+
 
     /**
      * Clears the collection.
@@ -173,19 +204,20 @@ public class CollectionManager {
     /**
      * Saves the collection to file.
      */
-    public void saveCollection() {
+    /*public void saveCollection() {
         fileManager.writeCollection(organizationsCollection);
         lastSaveTime = LocalDateTime.now();
         System.out.println("Collection successfully saved.");
-    }
+    }*/
 
     /**
      * Loads the collection from file.
      */
-    public void loadCollection() {
+    /*public void loadCollection() {
         organizationsCollection = fileManager.readCollection();
         lastInitTime = LocalDateTime.now();
     }
+    */
 
     @Override
     public String toString() {

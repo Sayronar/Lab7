@@ -22,4 +22,3 @@ Roflovaya
 352
 875
 491
-client_exit

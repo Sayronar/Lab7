@@ -40,35 +40,36 @@ public class Client {
 
     public void run() {
         try {
-            boolean processingStatus = true;
-            while (processingStatus) {
+            while (true) {
                 try {
                     connectToServer();
-                    processingStatus = processRequestToServer();
+                    processAuthentication();
+                    processRequestToServer();
+                    break;
                 } catch (ConnectionErrorException exception) {
                     if (reconnectionAttempts >= maxReconnectionAttempts) {
-                        Outputer.printerror("Connection attempts exceeded!");
+                        Outputer.printerror("Превышено количество попыток подключения!");
                         break;
                     }
                     try {
                         Thread.sleep(reconnectionTimeout);
                     } catch (IllegalArgumentException timeoutException) {
-                        Outputer.printerror("Connection timeout '" + reconnectionTimeout +
-                                "' is out of range!");
-                        Outputer.println("Reconnection will be made immediately.");
+                        Outputer.printerror("Время ожидания подключения '" + reconnectionTimeout +
+                                "' находится за пределами возможных значений!");
+                        Outputer.println("Повторное подключение будет произведено немедленно.");
                     } catch (Exception timeoutException) {
-                        Outputer.printerror("An error occurred while trying to connect!");
-                        Outputer.println("Reconnection will be made immediately.");
+                        Outputer.printerror("Произошла ошибка при попытке ожидания подключения!");
+                        Outputer.println("Повторное подключение будет произведено немедленно.");
                     }
                 }
                 reconnectionAttempts++;
             }
             if (socketChannel != null) socketChannel.close();
-            Outputer.println("Client work completed successfully.");
+            Outputer.println("Работа клиента завершена.");
         } catch (NotInDeclaredLimitsException exception) {
-            Outputer.printerror("The client cannot be started!");
+            Outputer.printerror("Клиент не может быть запущен!");
         } catch (IOException exception) {
-            Outputer.printerror("An error occurred while trying to terminate the connection to the server!");
+            Outputer.printerror("Произошла ошибка при попытке завершить соединение с сервером!");
         }
     }
 

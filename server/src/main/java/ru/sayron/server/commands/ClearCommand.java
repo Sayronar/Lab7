@@ -38,12 +38,12 @@ public class ClearCommand extends AbstractCommand {
             }
             databaseCollectionManager.clearCollection();
             collectionManager.clearCollection();
-            collectionManager.clearCollection();
             ResponseOutputer.appendln("Collection cleared!");
             return true;
         } catch (WrongAmountOfElementsException exception) {
             ResponseOutputer.appendln("Usage: '" + getName() + " " + getUsage() + "'");
         } catch (DatabaseHandlingException exception) {
+            exception.printStackTrace();
             ResponseOutputer.appenderror("Произошла ошибка при обращении к базе данных!");
         } catch (PermissionDeniedException exception) {
             ResponseOutputer.appenderror("Недостаточно прав для выполнения данной команды!");

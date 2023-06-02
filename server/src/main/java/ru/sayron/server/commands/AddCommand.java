@@ -42,6 +42,7 @@ public class AddCommand extends AbstractCommand {
         } catch (ClassCastException exception) {
             ResponseOutputer.appenderror("The object passed by the client is invalid!");
         } catch (DatabaseHandlingException exception) {
+            exception.printStackTrace();
             ResponseOutputer.appenderror("Произошла ошибка при обращении к базе данных!");
         }
         return false;

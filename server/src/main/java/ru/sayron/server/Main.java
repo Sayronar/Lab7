@@ -11,7 +11,7 @@ import ru.sayron.server.utility.*;
 public class Main {
     private static final int MAX_CLIENTS = 1000;
     public static Logger logger = (Logger) LoggerFactory.getLogger("ServerLogger");
-    private static String databaseUsername = "s284724";
+    private static String databaseUsername = "s367868";
     private static int port;
     private static String databaseHost;
     private static String databasePassword;
@@ -48,7 +48,7 @@ public class Main {
         server.run();
         databaseHandler.closeConnection();
     }
-
+//TJXbjhLGKcGPCMdR
     /**
      * Controls initialization.
      */
@@ -60,6 +60,7 @@ public class Main {
             databaseHost = args[1];
             databasePassword = args[2];
             databaseAddress = "jdbc:postgresql://" + databaseHost + ":5432/studs";
+            //databaseAddress = "jdbc:postgresql://localhost:5432/Lab7";
             return true;
         } catch (WrongAmountOfElementsException exception) {
             String jarName = new java.io.File(Main.class.getProtectionDomain()

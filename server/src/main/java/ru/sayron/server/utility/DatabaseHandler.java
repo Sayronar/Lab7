@@ -13,7 +13,7 @@ public class DatabaseHandler {
     public static final String ORGANIZATION_TABLE = "organization";
     public static final String USER_TABLE = "my_user";
     public static final String COORDINATES_TABLE = "coordinates";
-    public static final String LOCATION_TABLE = "location";
+    public static final String LOCATION_TABLE = "location1";
     public static final String ADDRESS_TABLE = "address";
     // ORGANIZATION_TABLE column names
     public static final String ORGANIZATION_TABLE_ID_COLUMN = "id";
@@ -43,7 +43,7 @@ public class DatabaseHandler {
     // ADDRESS_TABLE column names
     public static final String ADDRESS_TABLE_ID_COLUMN = "id";
     public static final String ADDRESS_TABLE_STREET_COLUMN = "street";
-    public static final String ADDRESS_TABLE_LOCATION_ID_COLUMN = "location id";
+    public static final String ADDRESS_TABLE_LOCATION_ID_COLUMN = "location_id";
 
     private final String JDBC_DRIVER = "org.postgresql.Driver";
 
@@ -71,6 +71,7 @@ public class DatabaseHandler {
             Main.logger.info("Соединение с базой данных установлено.");
         } catch (SQLException exception) {
             Outputer.printerror("Произошла ошибка при подключении к базе данных!");
+            exception.printStackTrace();
             Main.logger.error("Произошла ошибка при подключении к базе данных!");
         } catch (ClassNotFoundException exception) {
             Outputer.printerror("Драйвер управления базой дынных не найден!");

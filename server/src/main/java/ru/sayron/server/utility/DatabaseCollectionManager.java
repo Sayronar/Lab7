@@ -34,8 +34,7 @@ public class DatabaseCollectionManager {
             DatabaseHandler.ORGANIZATION_TABLE_FULL_NAME_COLUMN + ", " +
             DatabaseHandler.ORGANIZATION_TABLE_EMPLOYEES_COUNT_COLUMN + ", " +
             DatabaseHandler.ORGANIZATION_TABLE_ADDRESS_ID_COLUMN + ", " +
-            DatabaseHandler.ORGANIZATION_TABLE_USER_ID_COLUMN + ") VALUES (?, ?, ?, ?," +
-            "?::type, ?, ?, ?)";
+            DatabaseHandler.ORGANIZATION_TABLE_USER_ID_COLUMN + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     private final String DELETE_ORGANIZATION_BY_ID = "DELETE FROM " + DatabaseHandler.ORGANIZATION_TABLE +
             " WHERE " + DatabaseHandler.ORGANIZATION_TABLE_ID_COLUMN + " = ?";
     private final String UPDATE_ORGANIZATION_NAME_BY_ID = "UPDATE " + DatabaseHandler.ORGANIZATION_TABLE + " SET " +
@@ -51,7 +50,7 @@ public class DatabaseCollectionManager {
             DatabaseHandler.ORGANIZATION_TABLE_EMPLOYEES_COUNT_COLUMN + " = ?" + " WHERE " +
             DatabaseHandler.ORGANIZATION_TABLE_ID_COLUMN + " = ?";
     private final String UPDATE_ORGANIZATION_TYPE_BY_ID = "UPDATE " + DatabaseHandler.ORGANIZATION_TABLE + " SET " +
-            DatabaseHandler.ORGANIZATION_TABLE_ORGANIZATION_TYPE_COLUMN + " = ?::type" + " WHERE " +
+            DatabaseHandler.ORGANIZATION_TABLE_ORGANIZATION_TYPE_COLUMN + " ? " + " WHERE " +
             DatabaseHandler.ORGANIZATION_TABLE_ID_COLUMN + " = ?";
     // COORDINATES_TABLE
     private final String SELECT_ALL_COORDINATES = "SELECT * FROM " + DatabaseHandler.COORDINATES_TABLE;
@@ -85,10 +84,10 @@ public class DatabaseCollectionManager {
     private final String SELECT_LOCATION_BY_ID = SELECT_ALL_LOCATION +
             " WHERE " + DatabaseHandler.LOCATION_TABLE_ID_COLUMN + " = ?";
     private final String INSERT_LOCATION = "INSERT INTO " +
-            DatabaseHandler.LOCATION_TABLE + " (" +
+            "location1" + " (" +
             DatabaseHandler.LOCATION_TABLE_X_COLUMN + ", " +
             DatabaseHandler.LOCATION_TABLE_Y_COLUMN + ", " +
-            DatabaseHandler.LOCATION_TABLE_Z_COLUMN + ") VALUES (?, ?, ?, ?)";
+            DatabaseHandler.LOCATION_TABLE_Z_COLUMN + ") VALUES (?, ?, ?)";
     private final String UPDATE_LOCATION_BY_ID = "UPDATE " + DatabaseHandler.LOCATION_TABLE + " SET " +
             DatabaseHandler.LOCATION_TABLE_X_COLUMN + ", " +
             DatabaseHandler.LOCATION_TABLE_Y_COLUMN + ", " +
@@ -152,6 +151,7 @@ public class DatabaseCollectionManager {
                 organizationList.add(createOrganization(resultSet));
             }
         } catch (SQLException exception) {
+            exception.printStackTrace();
             throw new DatabaseHandlingException();
         } finally {
             databaseHandler.closePreparedStatement(preparedSelectAllStatement);
@@ -160,20 +160,20 @@ public class DatabaseCollectionManager {
     }
 
     /**
-     * @param OrganizationId Id of Organization.
+     * @param organizationId Id of Organization.
      * @return Chapter id.
      * @throws SQLException When there's exception inside.
      */
-    private long getAddressIdByOrganizationId(long OrganizationId) throws SQLException {
-        long chapterId;
+    private long getAddressIdByOrganizationId(long organizationId) throws SQLException {
+        long addressId;
         PreparedStatement preparedSelectOrganizationByIdStatement = null;
         try {
             preparedSelectOrganizationByIdStatement = databaseHandler.getPreparedStatement(SELECT_ORGANIZATION_BY_ID, false);
-            preparedSelectOrganizationByIdStatement.setLong(1, OrganizationId);
+            preparedSelectOrganizationByIdStatement.setLong(1, organizationId);
             ResultSet resultSet = preparedSelectOrganizationByIdStatement.executeQuery();
             Main.logger.info("Выполнен запрос SELECT_Organization_BY_ID.");
             if (resultSet.next()) {
-                chapterId = resultSet.getLong(DatabaseHandler.ORGANIZATION_TABLE_ADDRESS_ID_COLUMN);
+                addressId = resultSet.getLong(DatabaseHandler.ORGANIZATION_TABLE_ADDRESS_ID_COLUMN);
             } else throw new SQLException();
         } catch (SQLException exception) {
             Main.logger.error("Произошла ошибка при выполнении запроса SELECT_Organization_BY_ID!");
@@ -181,21 +181,21 @@ public class DatabaseCollectionManager {
         } finally {
             databaseHandler.closePreparedStatement(preparedSelectOrganizationByIdStatement);
         }
-        return chapterId;
+        return addressId;
     }
 
     /**
-     * @param OrganizationId Id of Organization.
+     * @param organizationId Id of Organization.
      * @return coordinates.
      * @throws SQLException When there's exception inside.
      */
-    private Coordinates getCoordinatesByOrganizationId(long OrganizationId) throws SQLException {
+    private Coordinates getCoordinatesByOrganizationId(long organizationId) throws SQLException {
         Coordinates coordinates;
         PreparedStatement preparedSelectCoordinatesByOrganizationIdStatement = null;
         try {
             preparedSelectCoordinatesByOrganizationIdStatement =
                     databaseHandler.getPreparedStatement(SELECT_COORDINATES_BY_ORGANIZATION_ID, false);
-            preparedSelectCoordinatesByOrganizationIdStatement.setLong(1, OrganizationId);
+            preparedSelectCoordinatesByOrganizationIdStatement.setLong(1, organizationId);
             ResultSet resultSet = preparedSelectCoordinatesByOrganizationIdStatement.executeQuery();
             Main.logger.info("Выполнен запрос SELECT_COORDINATES_BY_Organization_ID.");
             if (resultSet.next()) {
@@ -226,7 +226,7 @@ public class DatabaseCollectionManager {
                     databaseHandler.getPreparedStatement(SELECT_ADDRESS_BY_ID, false);
             preparedSelectAddressByIdStatement.setLong(1, addressId);
             ResultSet resultSet = preparedSelectAddressByIdStatement.executeQuery();
-            Main.logger.info("Выполнен запрос SELECT_CHAPTER_BY_ID.");
+            Main.logger.info("Выполнен запрос SELECT_ADDRESS_BY_ID.");
             if (resultSet.next()) {
                 address = new Address(
                         resultSet.getString(DatabaseHandler.ADDRESS_TABLE_STREET_COLUMN),
@@ -234,7 +234,8 @@ public class DatabaseCollectionManager {
                 );
             } else throw new SQLException();
         } catch (SQLException exception) {
-            Main.logger.error("Произошла ошибка при выполнении запроса SELECT_CHAPTER_BY_ID!");
+            exception.printStackTrace();
+            Main.logger.error("Произошла ошибка при выполнении запроса SELECT_ADDRESS_BY_ID!");
             throw new SQLException(exception);
         } finally {
             databaseHandler.closePreparedStatement(preparedSelectAddressByIdStatement);
@@ -252,10 +253,10 @@ public class DatabaseCollectionManager {
         PreparedStatement preparedSelectLocationByIdStatement = null;
         try {
             preparedSelectLocationByIdStatement =
-                    databaseHandler.getPreparedStatement(SELECT_ADDRESS_BY_ID, false);
+                    databaseHandler.getPreparedStatement(SELECT_LOCATION_BY_ID, false);
             preparedSelectLocationByIdStatement.setLong(1, locationId);
             ResultSet resultSet = preparedSelectLocationByIdStatement.executeQuery();
-            Main.logger.info("Выполнен запрос SELECT_CHAPTER_BY_ID.");
+            Main.logger.info("Выполнен запрос SELECT_ADDRESS_BY_ID.");
             if (resultSet.next()) {
                 town = new Location(
                         resultSet.getInt(DatabaseHandler.LOCATION_TABLE_X_COLUMN),
@@ -264,7 +265,8 @@ public class DatabaseCollectionManager {
                 );
             } else throw new SQLException();
         } catch (SQLException exception) {
-            Main.logger.error("Произошла ошибка при выполнении запроса SELECT_CHAPTER_BY_ID!");
+            exception.printStackTrace();
+            Main.logger.error("Произошла ошибка при выполнении запроса SELECT_ADDRESS_BY_ID!");
             throw new SQLException(exception);
         } finally {
             databaseHandler.closePreparedStatement(preparedSelectLocationByIdStatement);
@@ -283,6 +285,7 @@ public class DatabaseCollectionManager {
         PreparedStatement preparedInsertOrganizationStatement = null;
         PreparedStatement preparedInsertCoordinatesStatement = null;
         PreparedStatement preparedInsertAddressStatement = null;
+        PreparedStatement preparedInsertLocationStatement = null;
 
         try {
             databaseHandler.setCommitMode();
@@ -293,24 +296,36 @@ public class DatabaseCollectionManager {
             preparedInsertOrganizationStatement = databaseHandler.getPreparedStatement(INSERT_ORGANIZATION, true);
             preparedInsertCoordinatesStatement = databaseHandler.getPreparedStatement(INSERT_COORDINATES, true);
             preparedInsertAddressStatement = databaseHandler.getPreparedStatement(INSERT_ADDRESS, true);
+            preparedInsertLocationStatement = databaseHandler.getPreparedStatement(INSERT_LOCATION, true);
+
+            preparedInsertLocationStatement.setFloat(1, organizationRaw.getOfficialAddress().getTown().getX());
+            preparedInsertLocationStatement.setFloat(2, organizationRaw.getOfficialAddress().getTown().getY());
+            preparedInsertLocationStatement.setFloat(3, organizationRaw.getOfficialAddress().getTown().getZ());
+            if (preparedInsertLocationStatement.executeUpdate() == 0) throw new SQLException();
+            ResultSet generatedLocationKeys = preparedInsertLocationStatement.getGeneratedKeys();
+            long locationId;
+            if (generatedLocationKeys.next()) {
+                locationId = generatedLocationKeys.getLong(1);
+            } else throw new SQLException();
+            Main.logger.info("Выполнен запрос INSERT_LOCATION.");
 
             preparedInsertAddressStatement.setString(1, organizationRaw.getOfficialAddress().getStreet());
-            preparedInsertAddressStatement.setString(2, organizationRaw.getOfficialAddress().getTown().toString());
+            preparedInsertAddressStatement.setLong(2, locationId);
             if (preparedInsertAddressStatement.executeUpdate() == 0) throw new SQLException();
-            ResultSet generatedChapterKeys = preparedInsertAddressStatement.getGeneratedKeys();
-            long chapterId;
-            if (generatedChapterKeys.next()) {
-                chapterId = generatedChapterKeys.getLong(1);
+            ResultSet generatedAddressKeys = preparedInsertAddressStatement.getGeneratedKeys();
+            long addressId;
+            if (generatedAddressKeys.next()) {
+                addressId = generatedAddressKeys.getLong(1);
             } else throw new SQLException();
             Main.logger.info("Выполнен запрос INSERT_ADDRESS.");
 
             preparedInsertOrganizationStatement.setString(1, organizationRaw.getName());
             preparedInsertOrganizationStatement.setTimestamp(2, Timestamp.valueOf(creationTime));
             preparedInsertOrganizationStatement.setInt(3, organizationRaw.getAnnualTurnover());
-            preparedInsertOrganizationStatement.setString(4, organizationRaw.getFullName());
-            preparedInsertOrganizationStatement.setLong(5, organizationRaw.getEmployeesCount());
-            preparedInsertOrganizationStatement.setString(6, organizationRaw.getType().toString());
-            preparedInsertOrganizationStatement.setLong(7, chapterId);
+            preparedInsertOrganizationStatement.setString(4, organizationRaw.getType().toString());
+            preparedInsertOrganizationStatement.setString(5, organizationRaw.getFullName());
+            preparedInsertOrganizationStatement.setLong(6, organizationRaw.getEmployeesCount());
+            preparedInsertOrganizationStatement.setLong(7, addressId);
             preparedInsertOrganizationStatement.setLong(8, databaseUserManager.getUserIdByUsername(user));
             if (preparedInsertOrganizationStatement.executeUpdate() == 0) throw new SQLException();
             ResultSet generatedOrganizationKeys = preparedInsertOrganizationStatement.getGeneratedKeys();
@@ -319,7 +334,6 @@ public class DatabaseCollectionManager {
                 organizationId = generatedOrganizationKeys.getLong(1);
             } else throw new SQLException();
             Main.logger.info("Выполнен запрос INSERT_ORGANIZATION.");
-
             preparedInsertCoordinatesStatement.setLong(1, organizationId);
             preparedInsertCoordinatesStatement.setDouble(2, organizationRaw.getCoordinates().getX());
             preparedInsertCoordinatesStatement.setFloat(3, organizationRaw.getCoordinates().getY());
@@ -342,6 +356,7 @@ public class DatabaseCollectionManager {
             databaseHandler.commit();
             return organization;
         } catch (SQLException exception) {
+            exception.printStackTrace();
             Main.logger.error("Произошла ошибка при выполнении группы запросов на добавление нового объекта!");
             databaseHandler.rollback();
             throw new DatabaseHandlingException();
@@ -349,6 +364,7 @@ public class DatabaseCollectionManager {
             databaseHandler.closePreparedStatement(preparedInsertOrganizationStatement);
             databaseHandler.closePreparedStatement(preparedInsertCoordinatesStatement);
             databaseHandler.closePreparedStatement(preparedInsertAddressStatement);
+            databaseHandler.closePreparedStatement(preparedInsertLocationStatement);
             databaseHandler.setNormalMode();
         }
     }
@@ -447,17 +463,18 @@ public class DatabaseCollectionManager {
      * @throws DatabaseHandlingException When there's exception inside.
      */
     public void deleteOrganizationById(long organizationId) throws DatabaseHandlingException {
-        PreparedStatement preparedDeleteChapterByIdStatement = null;
+        PreparedStatement preparedDeleteAddressByIdStatement = null;
         try {
-            preparedDeleteChapterByIdStatement = databaseHandler.getPreparedStatement(DELETE_ADDRESS_BY_ID, false);
-            preparedDeleteChapterByIdStatement.setLong(1, getAddressIdByOrganizationId(organizationId));
-            if (preparedDeleteChapterByIdStatement.executeUpdate() == 0) Outputer.println(3);
-            Main.logger.info("Выполнен запрос DELETE_CHAPTER_BY_ID.");
+            preparedDeleteAddressByIdStatement = databaseHandler.getPreparedStatement(DELETE_ADDRESS_BY_ID, false);
+            preparedDeleteAddressByIdStatement.setLong(1, /*getAddressIdByOrganizationId*/(organizationId));
+            //if (preparedDeleteAddressByIdStatement.executeUpdate() == 0) Outputer.println(3);
+            Main.logger.info("Выполнен запрос DELETE_ADDRESS_BY_ID.");
         } catch (SQLException exception) {
+            exception.printStackTrace();
             Main.logger.error("Произошла ошибка при выполнении запроса DELETE_CHAPTER_BY_ID!");
             throw new DatabaseHandlingException();
         } finally {
-            databaseHandler.closePreparedStatement(preparedDeleteChapterByIdStatement);
+            databaseHandler.closePreparedStatement(preparedDeleteAddressByIdStatement);
         }
     }
 
@@ -492,8 +509,8 @@ public class DatabaseCollectionManager {
      * @throws DatabaseHandlingException When there's exception inside.
      */
     public void clearCollection() throws DatabaseHandlingException {
-        NavigableSet<Organization> OrganizationList = getCollection();
-        for (Organization organization : OrganizationList) {
+        NavigableSet<Organization> organizationList = getCollection();
+        for (Organization organization : organizationList) {
             deleteOrganizationById(organization.getId());
         }
     }

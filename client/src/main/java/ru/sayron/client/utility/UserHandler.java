@@ -169,6 +169,12 @@ public class UserHandler {
                 case "server_exit":
                     if (!commandArgument.isEmpty()) throw new CommandUsageException();
                     break;
+                case "login":
+                    if (!commandArgument.isEmpty()) throw new CommandUsageException();
+                    break;
+                case "register":
+                    if (!commandArgument.isEmpty()) throw new CommandUsageException();
+                    break;
                 default:
                     Outputer.println("Command '" + command + "' is not found. Type 'help' for help.");
                     return ProcessingCode.ERROR;

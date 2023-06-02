@@ -325,6 +325,9 @@ public class DatabaseCollectionManager {
             preparedInsertOrganizationStatement.setString(4, organizationRaw.getType().toString());
             preparedInsertOrganizationStatement.setString(5, organizationRaw.getFullName());
             preparedInsertOrganizationStatement.setLong(6, organizationRaw.getEmployeesCount());
+            preparedInsertOrganizationStatement.setString(4, organizationRaw.getFullName());
+            preparedInsertOrganizationStatement.setLong(5, organizationRaw.getEmployeesCount());
+            preparedInsertOrganizationStatement.setString(6, organizationRaw.getType().toString());
             preparedInsertOrganizationStatement.setLong(7, addressId);
             preparedInsertOrganizationStatement.setLong(8, databaseUserManager.getUserIdByUsername(user));
             if (preparedInsertOrganizationStatement.executeUpdate() == 0) throw new SQLException();
